@@ -13,6 +13,7 @@
         sgx_get_target_info;
         sgx_create_encrypted_enclave;
         sgx_create_enclave_from_buffer_ex;
+        sgx_read_ocall_counter;
     local:
         *;
 };

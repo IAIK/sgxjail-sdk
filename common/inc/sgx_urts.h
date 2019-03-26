@@ -128,6 +128,8 @@ sgx_status_t SGXAPI sgx_create_encrypted_enclave(
 
 sgx_status_t SGXAPI sgx_destroy_enclave(const sgx_enclave_id_t enclave_id);
 
+long SGXAPI sgx_read_ocall_counter();
+
 sgx_status_t SGXAPI sgx_get_target_info(
 	const sgx_enclave_id_t enclave_id,
 	sgx_target_info_t* target_info);

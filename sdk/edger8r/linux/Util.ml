@@ -66,12 +66,16 @@ let usage (progname: string) =
 --use-prefix          Prefix untrusted proxy with Enclave name\n\
 --header-only         Only generate header files\n\
 --untrusted           Generate untrusted proxy and bridge\n\
+--suntrusted          Generated untrusted sandbox proxy\n\
 --trusted             Generate trusted proxy and bridge\n\
+--gen_sbox	      Generate App_s.cpp\n\
 --untrusted-dir <dir> Specify the directory for saving untrusted code\n\
+--suntrusted-dir <dir> Specify the directory for saving sandboxed untrusted code\n\
 --trusted-dir   <dir> Specify the directory for saving trusted code\n\
+--sbox_cpp-dir <dir> Specify the directory for the App_s.cpp file\n\
 --help                Print this help message\n";
   eprintf "\n\
-If neither `--untrusted' nor `--trusted' is specified, generate both.\n";
+If neither `--suntrusted --untrusted' nor `--trusted' is specified, generate all three.\n";
   exit 1
 
 
@@ -81,9 +85,14 @@ type edger8r_params = {
   use_prefix    : bool;
   header_only   : bool;
   gen_untrusted : bool;         (* User specified `--untrusted' *)
+  gen_suntrusted : bool;         (* User specified '--suntrusted' *)
   gen_trusted   : bool;         (* User specified `--trusted' *)
   untrusted_dir : string;       (* Directory to save untrusted code *)
   trusted_dir   : string;       (* Directory to save trusted code *)
+  sbox_cpp_dir	: string; 	(*Directory to save App_s.cpp code*)
+  gen_sbox	: bool; 	(* User specified '--sandbox_cpp'*)
+  suntrusted_dir : string;       (* Directory to save sandboxed untrusted code *)
+  
 }
 
 (* The search paths are recored in the array below.
@@ -106,8 +115,12 @@ let rec parse_cmdline (progname: string) (cmdargs: string list) =
   let hd_only  = ref false in
   let untrusted= ref false in
   let trusted  = ref false in
+  let suntrusted = ref false in
+  let sbox_cpp	= ref false in
   let u_dir    = ref "." in
+  let su_dir   = ref "." in
   let t_dir    = ref "." in
+  let sb_dir   = ref "." in
   let files    = ref [] in
 
   let rec local_parser (args: string list) =
@@ -119,11 +132,21 @@ let rec parse_cmdline (progname: string) (cmdargs: string list) =
             | "--header-only"-> hd_only := true; local_parser ops
             | "--untrusted"  -> untrusted := true; local_parser ops
             | "--trusted"    -> trusted := true; local_parser ops
+            | "--suntrusted" -> suntrusted := true; local_parser ops
+	    | "--gen_sbox"   -> sbox_cpp := true; local_parser ops
             | "--untrusted-dir" ->
               (match ops with
                 []    -> usage progname
               | x::xs -> u_dir := x; local_parser xs)
+            | "--suntrusted-dir" ->
+              (match ops with
+                []    -> usage progname
+              | x::xs -> su_dir := x; local_parser xs)
             | "--trusted-dir" ->
+              (match ops with
+                []    -> usage progname
+              | x::xs -> t_dir := x; local_parser xs)
+            | "--sbox_cpp-dir" ->
               (match ops with
                 []    -> usage progname
               | x::xs -> t_dir := x; local_parser xs)
@@ -141,12 +164,12 @@ let rec parse_cmdline (progname: string) (cmdargs: string list) =
     local_parser cmdargs;
     let opt =
       { input_files = List.rev !files; use_prefix = !use_pref;
-        header_only = !hd_only; gen_untrusted = true; gen_trusted = true;
-        untrusted_dir = !u_dir; trusted_dir = !t_dir;
+        header_only = !hd_only; gen_suntrusted = true; gen_untrusted = true; gen_trusted = true;
+        untrusted_dir = !u_dir; trusted_dir = !t_dir; suntrusted_dir = !su_dir; sbox_cpp_dir = !sb_dir; gen_sbox = false;
       }
     in
-      if !untrusted || !trusted (* User specified '--untrusted' or '--trusted' *)
-      then { opt with gen_trusted = !trusted; gen_untrusted = !untrusted }
+      if !untrusted || !trusted || !suntrusted || !sbox_cpp (* User specified '--untrusted' or '--trusted' *)
+      then { opt with gen_trusted = !trusted; gen_untrusted = !untrusted; gen_suntrusted = !suntrusted; gen_sbox = !sbox_cpp}
       else opt
 
 let separator_str : string = Filename.dir_sep
@@ -236,6 +259,7 @@ let is_c_identifier(s: string) =
  *)
 let trusted_headers  : string list ref = ref []
 let untrusted_headers: string list ref = ref []
+let suntrusted_headers: string list ref = ref []
 
 (* Create directory specified by `d'. *)
 let create_dir (d: string) =

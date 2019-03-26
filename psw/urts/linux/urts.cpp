@@ -205,3 +205,15 @@ sgx_create_encrypted_enclave(
         launch_token_updated, enclave_id, misc_attr, ex_features, ex_features_p);
 }
 
+long g_ocall_count = 0;
+
+extern "C" long sgx_read_ocall_counter() 
+{
+    return g_ocall_count;
+}
+
+void inc_ocall_counter() 
+{
+    g_ocall_count++;
+}
+

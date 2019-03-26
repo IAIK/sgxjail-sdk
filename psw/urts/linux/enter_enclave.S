@@ -92,6 +92,12 @@ EENTER_PROLOG
     je      .Leret
 
 .Ldo_ocall:
+/* Count number of ocalls */
+  lea_symbol g_ocall_count, %xax
+  mov (%xax), %xbx
+  inc %xbx
+  mov %xbx, (%xax)
+
 /* call ocall
  * int ocall(const unsigned int proc, void *ocall_table, const void *ms, CEnclave *enclave);
  *
